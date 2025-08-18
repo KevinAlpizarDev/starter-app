@@ -1,0 +1,45 @@
+version: '3.8'
+
+services:
+  backend:
+    image: backend_app
+    container_name: backend_app
+    build:
+      context: ./backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    command: >
+      bash -c "./wait-for-it.sh mysql:3306 --timeout=60 --strict -- 
+               python manage.py migrate &&
+               python manage.py runserver 0.0.0.0:8000"
+    depends_on:
+      - mysql
+
+  frontend:
+    container_name: frontend_app
+    image: frontend_app
+    build:
+      context: ./frontend
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "5173:5173"
+    environment:
+      - NODE_ENV=development
+
+  mysql:
+    image: mysql:latest
+    ports:
+      - "3307:3306"
+    environment:
+      - MYSQL_ROOT_PASSWORD=password
+      - MYSQL_DATABASE=starterdb
+    volumes:
+      - starter_data:/var/lib/mysql
+      - ./dumps:/docker-entrypoint-initdb.d:ro
+
+volumes:
+  starter_data:
